@@ -75,16 +75,42 @@ services:
     networks:
       - monitoring
 
-  target-ubuntu-vm:
+  app-server-01:
     build:
       context: .
       dockerfile: Dockerfile.ubuntu
-    container_name: target-ubuntu-vm
+    container_name: app-server-01
+    hostname: app-server-01
+    restart: unless-stopped
+    ports:
+      - "2221:22"
+      - "9101:9100"
+    networks:
+      - monitoring
+
+  app-server-02:
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu
+    container_name: app-server-02
+    hostname: app-server-02
     restart: unless-stopped
     ports:
       - "2222:22"
-      - "9101:9100"
-      - "8080:80"
+      - "9102:9100"
+    networks:
+      - monitoring
+
+  db-server-01:
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu
+    container_name: db-server-01
+    hostname: db-server-01
+    restart: unless-stopped
+    ports:
+      - "2223:22"
+      - "9103:9100"
     networks:
       - monitoring
 
