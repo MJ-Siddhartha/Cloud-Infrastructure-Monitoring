@@ -23,17 +23,12 @@ scrape_configs:
     static_configs:
       - targets: ["node-exporter:9100"]
         labels:
-          hostname: "local-node"
-          environment: "development"
-      # VM targets (uncomment when VMs are available)
-      # - targets: ["192.168.56.11:9100"]
-      #   labels:
-      #     hostname: "app-server-1"
-      #     environment: "production"
-      # - targets: ["192.168.56.12:9100"]
-      #   labels:
-      #     hostname: "app-server-2"
-      #     environment: "production"
+          hostname: "host-laptop"
+          environment: "management"
+      - targets: ["target-ubuntu-vm:9100"]
+        labels:
+          hostname: "ubuntu-target-vm"
+          environment: "production"
 
   - job_name: "fastapi-backend"
     metrics_path: "/metrics"

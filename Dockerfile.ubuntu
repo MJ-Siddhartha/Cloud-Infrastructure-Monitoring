@@ -1,0 +1,65 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install essential tools, stress-ng, nginx, python, openssh, curl, sudo
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    sudo \
+    curl \
+    wget \
+    stress-ng \
+    nginx \
+    procps \
+    iproute2 \
+    systemd-sysv \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install Node Exporter v1.8.2
+RUN wget -q https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz -O /tmp/node_exporter.tar.gz \
+    && tar -xzf /tmp/node_exporter.tar.gz -C /tmp \
+    && mv /tmp/node_exporter-1.8.2.linux-amd64/node_exporter /usr/local/bin/ \
+    && rm -rf /tmp/node_exporter*
+
+# Create monitor user with password and sudo privileges
+RUN useradd -m -s /bin/bash monitor \
+    && echo "monitor:<removed>" | chpasswd \
+    && usermod -aG sudo monitor \
+    && echo "monitor ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Configure SSH
+RUN mkdir -p /var/run/sshd /home/monitor/.ssh \
+    && ssh-keygen -A \
+    && chown -R monitor:monitor /home/monitor/.ssh
+
+# Startup script to run sshd, nginx, and node_exporter in background
+COPY <<'EOF' /entrypoint.sh
+#!/bin/bash
+set -e
+
+# Start SSH daemon
+/usr/sbin/sshd
+
+# Start Nginx
+service nginx start
+
+# Start Node Exporter
+/usr/local/bin/node_exporter --web.listen-address="0.0.0.0:9100" &
+
+echo "=========================================================="
+echo " Ubuntu Target VM is RUNNING!"
+echo " - Node Exporter: port 9100"
+echo " - Nginx Service: port 80"
+echo " - SSH Service:   port 22 (user: monitor, pass: <removed>)"
+echo "=========================================================="
+
+# Keep container alive
+tail -f /dev/null
+EOF
+
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 22 80 9100
+
+CMD ["/entrypoint.sh"]

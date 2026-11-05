@@ -75,6 +75,19 @@ services:
     networks:
       - monitoring
 
+  target-ubuntu-vm:
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu
+    container_name: target-ubuntu-vm
+    restart: unless-stopped
+    ports:
+      - "2222:22"
+      - "9101:9100"
+      - "8080:80"
+    networks:
+      - monitoring
+
   postgres:
     image: postgres:16-alpine
     container_name: postgres
