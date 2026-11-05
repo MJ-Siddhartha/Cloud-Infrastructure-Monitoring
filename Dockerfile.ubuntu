@@ -47,10 +47,10 @@ service nginx start
 # Create textfile collector directory for real-time service metrics
 mkdir -p /var/lib/node_exporter/textfile_collector
 
-# Background service health watcher: checks nginx status every 2 seconds
+# Background service health watcher: checks nginx process every 2 seconds
 (
   while true; do
-    if service nginx status >/dev/null 2>&1; then
+    if pgrep -x nginx >/dev/null 2>&1; then
       ACTIVE=1
       FAILED=0
     else

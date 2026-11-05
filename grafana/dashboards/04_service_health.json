@@ -84,7 +84,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(node_systemd_unit_state{state=\"active\"}) or vector(0)",
+          "expr": "count(node_systemd_unit_state{state=\"active\"} == 1) or vector(0)",
           "refId": "A",
           "legendFormat": "__auto",
           "editorMode": "code",
@@ -144,7 +144,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(node_systemd_unit_state{state=\"failed\"}) or vector(0)",
+          "expr": "count(node_systemd_unit_state{state=\"failed\"} == 1) or vector(0)",
           "refId": "A",
           "legendFormat": "__auto",
           "editorMode": "code",
