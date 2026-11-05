@@ -4,7 +4,7 @@ groups:
     rules:
       - alert: SystemdServiceFailed
         expr: node_systemd_unit_state{state="failed"} == 1
-        for: 30s
+        for: 10s
         labels:
           severity: critical
         annotations:

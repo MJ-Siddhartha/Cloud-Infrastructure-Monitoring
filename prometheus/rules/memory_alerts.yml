@@ -3,23 +3,23 @@ groups:
     interval: 15s
     rules:
       - alert: HighMemoryUsage
-        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
-        for: 2m
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 60
+        for: 15s
         labels:
           severity: warning
         annotations:
           summary: "High memory usage detected on {{ $labels.instance }}"
-          description: "Memory utilization on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%, exceeding the 85% warning threshold."
+          description: "Memory utilization on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%, exceeding the 60% warning threshold."
           current_value: "{{ $value | printf \"%.1f\" }}%"
-          recommended_action: "Investigate memory-hungry processes using 'free -h' and 'ps aux --sort=-%mem'. Consider restarting memory-leaking services or adding swap."
+          recommended_action: "Investigate memory-hungry processes using 'free -h' and 'ps aux --sort=-%mem'."
 
       - alert: CriticalMemoryUsage
-        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
-        for: 1m
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 15s
         labels:
           severity: critical
         annotations:
           summary: "Critical memory usage detected on {{ $labels.instance }}"
-          description: "Memory utilization on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%, exceeding the 95% critical threshold. OOM killer may activate."
+          description: "Memory utilization on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%, exceeding the 80% critical threshold."
           current_value: "{{ $value | printf \"%.1f\" }}%"
-          recommended_action: "Immediate action required. Free memory by stopping non-essential services. Check for memory leaks. Consider increasing system memory or enabling swap."
+          recommended_action: "Immediate action required. Free memory by stopping non-essential services."
