@@ -19,13 +19,16 @@ logger = get_logger(__name__)
 
 def _format_alert_message(alert_data: dict) -> str:
     """Build a human-readable alert message."""
+    alert_name = alert_data.get('alert_name', 'Unknown')
+    severity = alert_data.get('severity', 'unknown').upper()
+    icon = "🔴" if severity == "CRITICAL" else "🟡"
     lines = [
-        f"🚨 **Alert: {alert_data.get('alert_name', 'Unknown')}**",
-        f"Severity: {alert_data.get('severity', 'unknown')}",
-        f"Instance: {alert_data.get('instance', 'N/A')}",
-        f"Description: {alert_data.get('description', 'N/A')}",
-        f"Metric Value: {alert_data.get('metric_value', 'N/A')}",
-        f"Timestamp: {datetime.now(timezone.utc).isoformat()}",
+        f"{icon} <b>ALERT: {alert_name}</b>",
+        f"<b>Severity:</b> {severity}",
+        f"<b>Instance:</b> {alert_data.get('instance', 'N/A')}",
+        f"<b>Description:</b> {alert_data.get('description', 'N/A')}",
+        f"<b>Metric Value:</b> {alert_data.get('metric_value', 'N/A')}",
+        f"<b>Timestamp:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
     ]
     return "\n".join(lines)
 
@@ -34,7 +37,7 @@ async def send_telegram_notification(alert_data: dict) -> None:
     """Send an alert notification via Telegram Bot API."""
     settings = get_settings()
     if not settings.TELEGRAM_BOT_TOKEN or not settings.TELEGRAM_CHAT_ID:
-        logger.debug("Telegram not configured, skipping notification")
+        logger.warning("Telegram not configured in settings, skipping notification")
         return
 
     message = _format_alert_message(alert_data)
@@ -42,14 +45,19 @@ async def send_telegram_notification(alert_data: dict) -> None:
     payload = {
         "chat_id": settings.TELEGRAM_CHAT_ID,
         "text": message,
-        "parse_mode": "Markdown",
+        "parse_mode": "HTML",
     }
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(url, json=payload)
-            response.raise_for_status()
-            logger.info("Telegram notification sent for alert=%s", alert_data.get("alert_name"))
+            if response.status_code != 200:
+                logger.error("Telegram API responded with error %s: %s", response.status_code, response.text)
+                # Retry with plain text without formatting
+                payload.pop("parse_mode", None)
+                await client.post(url, json=payload)
+            else:
+                logger.info("Telegram notification sent for alert=%s", alert_data.get("alert_name"))
     except httpx.HTTPError as exc:
         logger.error("Failed to send Telegram notification: %s", exc)
     except Exception as exc:
