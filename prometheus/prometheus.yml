@@ -31,11 +31,6 @@ scrape_configs:
           hostname: "app-server-01"
           tier: "web"
           environment: "production"
-      - targets: ["app-server-02:9100"]
-        labels:
-          hostname: "app-server-02"
-          tier: "api"
-          environment: "production"
       - targets: ["db-server-01:9100"]
         labels:
           hostname: "db-server-01"

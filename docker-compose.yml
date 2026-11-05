@@ -88,19 +88,6 @@ services:
     networks:
       - monitoring
 
-  app-server-02:
-    build:
-      context: .
-      dockerfile: Dockerfile.ubuntu
-    container_name: app-server-02
-    hostname: app-server-02
-    restart: unless-stopped
-    ports:
-      - "2222:22"
-      - "9102:9100"
-    networks:
-      - monitoring
-
   db-server-01:
     build:
       context: .
