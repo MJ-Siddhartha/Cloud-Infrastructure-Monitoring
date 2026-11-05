@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import time
 
-from fastapi import APIRouter, Response
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Request, Response
+from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import text
 
 from app.database import AsyncSessionLocal
@@ -19,18 +19,8 @@ router = APIRouter(tags=["health"])
 _START_TIME = time.time()
 
 
-@router.get("/health")
-async def health_check() -> dict:
-    """Liveness probe — always returns 200 if the process is running."""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-
-
-@router.get("/metrics", response_class=PlainTextResponse)
-async def metrics_endpoint() -> str:
-    """Prometheus exposition metrics endpoint."""
+async def _generate_metrics_text() -> str:
+    """Generate prometheus formatted metrics text."""
     uptime = time.time() - _START_TIME
     db_ok = 0
     try:
@@ -53,6 +43,32 @@ async def metrics_endpoint() -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+@router.get("/health")
+async def health_check(request: Request):
+    """Liveness probe.
+    If called by Prometheus scraper (User-Agent Prometheus or text/plain accept),
+    returns Prometheus text metrics. Otherwise returns standard JSON.
+    """
+    user_agent = request.headers.get("user-agent", "")
+    accept = request.headers.get("accept", "")
+    if "Prometheus" in user_agent or "text/plain" in accept or "openmetrics" in accept:
+        content = await _generate_metrics_text()
+        return PlainTextResponse(content=content)
+
+    return JSONResponse(
+        content={
+            "status": "healthy",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+
+@router.get("/metrics", response_class=PlainTextResponse)
+async def metrics_endpoint() -> str:
+    """Prometheus exposition metrics endpoint."""
+    return await _generate_metrics_text()
 
 
 @router.get("/ready")
