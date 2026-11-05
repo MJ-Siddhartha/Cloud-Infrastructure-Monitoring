@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.database import get_db
+from app.database import AsyncSessionLocal, get_db
 from app.schemas.webhook import AlertmanagerWebhook
 from app.services import incident_service
 from app.services.notification_service import (
@@ -101,14 +101,27 @@ async def receive_alertmanager_webhook(
                             engine = RecoveryEngine(settings)
                             if engine.should_recover(alert_name, instance, fingerprint):
                                 labels_dict = alert.labels.model_dump()
+                                async def _run_bg_recovery(inc_id, a_name, inst, lbls):
+                                    async with AsyncSessionLocal() as bg_db:
+                                        await engine.execute_recovery(
+                                            inc_id, a_name, inst, lbls, bg_db
+                                        )
+                                        await bg_db.commit()
+
                                 asyncio.create_task(
-                                    engine.execute_recovery(
+                                    _run_bg_recovery(
                                         incident.id,
                                         alert_name,
                                         instance,
                                         labels_dict,
-                                        db,
                                     )
+                                )
+                            else:
+                                await incident_service.update_recovery_status(
+                                    db,
+                                    incident.id,
+                                    "skipped",
+                                    output="Recovery skipped: host/service not in allowlist or cooldown active",
                                 )
                     except Exception as exc:
                         logger.error("Recovery trigger failed: %s", exc)

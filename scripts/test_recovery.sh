@@ -94,7 +94,7 @@ ELAPSED=0
 RECOVERED=false
 
 while [[ $ELAPSED -lt $MAX_POLL ]]; do
-    INCIDENT_DATA=$(curl -s "${BACKEND_URL}/api/incidents?page=1&per_page=1")
+    INCIDENT_DATA=$(curl -s "${BACKEND_URL}/api/incidents?page=1&per_page=10")
     
     if echo "$INCIDENT_DATA" | grep -q "${FINGERPRINT}"; then
         REC_STATUS=$(echo "$INCIDENT_DATA" | grep -o '"recovery_status":"[^"]*"' | cut -d':' -f2 | tr -d '"' || echo "pending")

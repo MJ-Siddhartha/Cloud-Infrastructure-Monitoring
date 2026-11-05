@@ -18,11 +18,17 @@ logger = get_logger(__name__)
 
 # Alert-name patterns mapped to recovery playbook methods
 ALERT_PLAYBOOK_MAP: dict[str, str] = {
+    "SystemdServiceFailed": "restart_service",
+    "SystemdServiceNotActive": "restart_service",
     "ServiceDown": "restart_service",
     "HighCPU": "restart_service",
+    "HighCPUUsage": "restart_service",
+    "CriticalCPUUsage": "restart_service",
     "ProcessCrash": "restart_service",
     "DiskSpaceLow": "cleanup_disk_space",
     "DiskSpaceCritical": "cleanup_disk_space",
+    "LowDiskSpace": "cleanup_disk_space",
+    "CriticalDiskSpace": "cleanup_disk_space",
 }
 
 
@@ -132,8 +138,9 @@ class RecoveryEngine:
     ) -> dict:
         """Synchronous dispatcher for playbook execution."""
         if playbook_name == "restart_service":
-            service_name = labels.get("service", labels.get("job", ""))
-            if service_name not in self.allowed_services:
+            raw_name = labels.get("name", labels.get("service", labels.get("job", "nginx")))
+            service_name = str(raw_name).replace(".service", "").strip()
+            if self.allowed_services and service_name not in self.allowed_services:
                 return {
                     "success": False,
                     "action": f"restart_service:{service_name}",

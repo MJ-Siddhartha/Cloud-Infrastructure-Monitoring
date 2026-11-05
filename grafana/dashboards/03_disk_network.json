@@ -185,12 +185,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "node_filesystem_avail_bytes{mountpoint=\"/\"}",
+          "expr": "node_filesystem_avail_bytes{mountpoint=~\"/|/rootfs\"}",
           "refId": "A",
-          "legendFormat": "__auto",
+          "legendFormat": "{{instance}}",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         }
       ]
     },
