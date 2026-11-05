@@ -33,7 +33,7 @@ RUN mkdir -p /var/run/sshd /home/monitor/.ssh \
     && ssh-keygen -A \
     && chown -R monitor:monitor /home/monitor/.ssh
 
-# Startup script to run sshd, nginx, and node_exporter in background
+# Startup script to run sshd, nginx, service watcher, and node_exporter
 COPY <<'EOF' /entrypoint.sh
 #!/bin/bash
 set -e
@@ -44,12 +44,38 @@ set -e
 # Start Nginx
 service nginx start
 
-# Start Node Exporter
-/usr/local/bin/node_exporter --web.listen-address="0.0.0.0:9100" &
+# Create textfile collector directory for real-time service metrics
+mkdir -p /var/lib/node_exporter/textfile_collector
+
+# Background service health watcher: checks nginx status every 2 seconds
+(
+  while true; do
+    if service nginx status >/dev/null 2>&1; then
+      ACTIVE=1
+      FAILED=0
+    else
+      ACTIVE=0
+      FAILED=1
+    fi
+    cat << EOF2 > /var/lib/node_exporter/textfile_collector/services.prom.tmp
+# HELP node_systemd_unit_state State of monitored services
+# TYPE node_systemd_unit_state gauge
+node_systemd_unit_state{name="nginx.service",state="active"} $ACTIVE
+node_systemd_unit_state{name="nginx.service",state="failed"} $FAILED
+EOF2
+    mv /var/lib/node_exporter/textfile_collector/services.prom.tmp /var/lib/node_exporter/textfile_collector/services.prom
+    sleep 2
+  done
+) &
+
+# Start Node Exporter with textfile collector enabled
+/usr/local/bin/node_exporter \
+  --collector.textfile.directory=/var/lib/node_exporter/textfile_collector \
+  --web.listen-address="0.0.0.0:9100" &
 
 echo "=========================================================="
 echo " Ubuntu Target VM is RUNNING!"
-echo " - Node Exporter: port 9100"
+echo " - Node Exporter: port 9100 (service telemetry enabled)"
 echo " - Nginx Service: port 80"
 echo " - SSH Service:   port 22 (user: monitor, pass: <removed>)"
 echo "=========================================================="
