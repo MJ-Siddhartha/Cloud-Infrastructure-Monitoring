@@ -121,7 +121,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(up{job=\"node-exporter\"})",
+          "expr": "count(up{job=\"node-exporter\"} == 1)",
           "legendFormat": "__auto",
           "refId": "A",
           "editorMode": "code",

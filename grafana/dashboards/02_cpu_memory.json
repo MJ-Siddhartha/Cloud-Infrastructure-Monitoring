@@ -251,7 +251,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count without(cpu, mode) (node_cpu_seconds_total{mode=\"idle\"})",
+          "expr": "count without(cpu, mode) (node_cpu_seconds_total{mode=\"idle\"}) * on(instance) group_left() (up{job=\"node-exporter\"} == 1)",
           "refId": "A",
           "legendFormat": "__auto",
           "editorMode": "code",
