@@ -14,8 +14,36 @@ from app.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
+async def find_incident_by_fingerprint_and_started_at(
+    db: AsyncSession, fingerprint: str, started_at: datetime
+) -> Incident | None:
+    """Fetch an incident by unique compound key (fingerprint, started_at)."""
+    result = await db.execute(
+        select(Incident).where(
+            Incident.fingerprint == fingerprint,
+            Incident.started_at == started_at,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def create_incident(db: AsyncSession, alert_data: dict[str, Any]) -> Incident:
-    """Create a new incident record from alert data."""
+    """Create a new incident record from alert data.
+    If an incident with the same (fingerprint, started_at) already exists,
+    returns the existing record instead of raising UniqueViolationError.
+    """
+    existing = await find_incident_by_fingerprint_and_started_at(
+        db, alert_data["fingerprint"], alert_data["started_at"]
+    )
+    if existing:
+        logger.info(
+            "Incident already exists for fingerprint=%s started_at=%s (id=%s)",
+            existing.fingerprint,
+            existing.started_at,
+            existing.id,
+        )
+        return existing
+
     incident = Incident(
         fingerprint=alert_data["fingerprint"],
         alert_name=alert_data["alert_name"],
@@ -29,8 +57,19 @@ async def create_incident(db: AsyncSession, alert_data: dict[str, Any]) -> Incid
         webhook_payload=alert_data.get("webhook_payload"),
     )
     db.add(incident)
-    await db.flush()
-    await db.refresh(incident)
+    try:
+        await db.flush()
+        await db.refresh(incident)
+    except Exception as exc:
+        await db.rollback()
+        # Fallback check in case of concurrent insert
+        existing_concurrent = await find_incident_by_fingerprint_and_started_at(
+            db, alert_data["fingerprint"], alert_data["started_at"]
+        )
+        if existing_concurrent:
+            return existing_concurrent
+        raise exc
+
     logger.info(
         "Created incident id=%s alert_name=%s fingerprint=%s",
         incident.id,

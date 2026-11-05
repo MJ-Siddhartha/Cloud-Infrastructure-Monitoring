@@ -33,8 +33,11 @@ fi
 
 echo -e "\n${YELLOW}--> Testing FastAPI Webhook Ingestion (/webhook/alertmanager)...${NC}"
 
-# Synthetic Alertmanager webhook payload
-TEST_PAYLOAD=$(cat << 'EOF'
+# Synthetic Alertmanager webhook payload with dynamic timestamps
+TEST_FP="test_fp_$(date +%s)"
+TEST_STARTS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+TEST_PAYLOAD=$(cat << EOF
 {
   "version": "4",
   "groupKey": "{}:{alertname=\"HighCPUUsage\",instance=\"test-node-01:9100\"}",
@@ -72,10 +75,10 @@ TEST_PAYLOAD=$(cat << 'EOF'
         "current_value": "92.5%",
         "recommended_action": "Inspect top processes and scale service"
       },
-      "startsAt": "2026-11-05T20:00:00.000Z",
+      "startsAt": "${TEST_STARTS}",
       "endsAt": "0001-01-01T00:00:00Z",
       "generatorURL": "http://prometheus:9090/graph?g0.expr=high_cpu",
-      "fingerprint": "a1b2c3d4e5f60001"
+      "fingerprint": "${TEST_FP}"
     }
   ]
 }
