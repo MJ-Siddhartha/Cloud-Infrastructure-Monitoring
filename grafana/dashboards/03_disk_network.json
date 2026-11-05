@@ -110,7 +110,9 @@
       "options": {
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "showThresholdLabels": false,
@@ -123,12 +125,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"})) * 100",
+          "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100)",
           "refId": "A",
           "legendFormat": "__auto",
           "editorMode": "code",
-          "range": true,
-          "instant": false
+          "range": false,
+          "instant": true
         }
       ]
     },
@@ -169,7 +171,9 @@
       "options": {
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "colorMode": "value",
@@ -185,7 +189,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "node_filesystem_avail_bytes{mountpoint=~\"/|/rootfs\"}",
+          "expr": "node_filesystem_avail_bytes{mountpoint=\"/\"}",
           "refId": "A",
           "legendFormat": "{{instance}}",
           "editorMode": "code",
@@ -231,7 +235,9 @@
       "options": {
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "colorMode": "value",
@@ -293,7 +299,9 @@
       "options": {
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "colorMode": "value",
@@ -405,7 +413,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(1 - (node_filesystem_avail_bytes{fstype!=\"tmpfs\"} / node_filesystem_size_bytes{fstype!=\"tmpfs\"})) * 100",
+          "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100)",
           "refId": "A",
           "legendFormat": "{{instance}} - {{mountpoint}}",
           "editorMode": "code",
@@ -501,7 +509,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "node_filesystem_avail_bytes{fstype!=\"tmpfs\"}",
+          "expr": "node_filesystem_avail_bytes{mountpoint=\"/\"}",
           "refId": "A",
           "legendFormat": "{{instance}} - {{mountpoint}}",
           "editorMode": "code",
@@ -597,7 +605,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(node_disk_read_bytes_total[5m])",
+          "expr": "rate(node_disk_read_bytes_total[5m]) or vector(0)",
           "refId": "A",
           "legendFormat": "{{instance}} - {{device}}",
           "editorMode": "code",
@@ -693,7 +701,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(node_disk_written_bytes_total[5m])",
+          "expr": "rate(node_disk_written_bytes_total[5m]) or vector(0)",
           "refId": "A",
           "legendFormat": "{{instance}} - {{device}}",
           "editorMode": "code",
@@ -1088,7 +1096,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(node_disk_io_time_seconds_total[5m]) * 100",
+          "expr": "rate(node_disk_io_time_seconds_total[5m]) * 100 or vector(0)",
           "refId": "A",
           "legendFormat": "{{instance}} - {{device}}",
           "editorMode": "code",
