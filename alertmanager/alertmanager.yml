@@ -1,0 +1,116 @@
+global:
+  resolve_timeout: 5m
+  smtp_from: "${SMTP_FROM_EMAIL}"
+  smtp_smarthost: "${SMTP_HOST}:${SMTP_PORT}"
+  smtp_auth_username: "${SMTP_USERNAME}"
+  smtp_auth_password: "${SMTP_PASSWORD}"
+  smtp_require_tls: true
+  telegram_api_url: "https://api.telegram.org"
+
+templates:
+  - "templates/*.tmpl"
+
+route:
+  receiver: "default"
+  group_by: ["alertname", "instance"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - receiver: "critical-alerts"
+      match:
+        severity: "critical"
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: true
+    - receiver: "warning-alerts"
+      match:
+        severity: "warning"
+      group_wait: 30s
+      repeat_interval: 4h
+
+    - receiver: "webhook-backend"
+      match_re:
+        alertname: ".*"
+      continue: true
+
+inhibit_rules:
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "warning"
+    equal: ["alertname", "instance"]
+
+receivers:
+  - name: "default"
+    webhook_configs:
+      - url: "http://backend:8000/webhook/alertmanager"
+        send_resolved: true
+
+  - name: "critical-alerts"
+    telegram_configs:
+      - bot_token: "${TELEGRAM_BOT_TOKEN}"
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: "HTML"
+        message: |
+          {{ if eq .Status "firing" }}🔴 CRITICAL ALERT{{ else }}✅ RESOLVED{{ end }}
+
+          <b>Alert:</b> {{ .GroupLabels.alertname }}
+          <b>Severity:</b> {{ .CommonLabels.severity }}
+          <b>Instance:</b> {{ .CommonLabels.instance }}
+          <b>Status:</b> {{ .Status }}
+
+          {{ range .Alerts }}
+          <b>Description:</b> {{ .Annotations.description }}
+          <b>Value:</b> {{ .Annotations.current_value }}
+          <b>Started:</b> {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+          {{ if .EndsAt }}<b>Ended:</b> {{ .EndsAt.Format "2006-01-02 15:04:05 UTC" }}{{ end }}
+          {{ end }}
+
+          <b>Action:</b> {{ .CommonAnnotations.recommended_action }}
+        send_resolved: true
+    email_configs:
+      - to: "${SMTP_TO_EMAIL}"
+        headers:
+          Subject: '[{{ .Status | toUpper }}] {{ .GroupLabels.alertname }} - {{ .CommonLabels.instance }}'
+        html: |
+          <h2>{{ if eq .Status "firing" }}🔴 ALERT FIRING{{ else }}✅ ALERT RESOLVED{{ end }}</h2>
+          <table>
+          <tr><td><b>Alert:</b></td><td>{{ .GroupLabels.alertname }}</td></tr>
+          <tr><td><b>Severity:</b></td><td>{{ .CommonLabels.severity }}</td></tr>
+          <tr><td><b>Instance:</b></td><td>{{ .CommonLabels.instance }}</td></tr>
+          <tr><td><b>Status:</b></td><td>{{ .Status }}</td></tr>
+          </table>
+          {{ range .Alerts }}
+          <p><b>Description:</b> {{ .Annotations.description }}</p>
+          <p><b>Current Value:</b> {{ .Annotations.current_value }}</p>
+          <p><b>Started:</b> {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}</p>
+          {{ end }}
+        send_resolved: true
+    webhook_configs:
+      - url: "http://backend:8000/webhook/alertmanager"
+        send_resolved: true
+
+  - name: "warning-alerts"
+    telegram_configs:
+      - bot_token: "${TELEGRAM_BOT_TOKEN}"
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: "HTML"
+        message: |
+          {{ if eq .Status "firing" }}🟡 WARNING{{ else }}✅ RESOLVED{{ end }}
+
+          <b>Alert:</b> {{ .GroupLabels.alertname }}
+          <b>Instance:</b> {{ .CommonLabels.instance }}
+
+          {{ range .Alerts }}
+          <b>Description:</b> {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+    webhook_configs:
+      - url: "http://backend:8000/webhook/alertmanager"
+        send_resolved: true
+
+  - name: "webhook-backend"
+    webhook_configs:
+      - url: "http://backend:8000/webhook/alertmanager"
+        send_resolved: true

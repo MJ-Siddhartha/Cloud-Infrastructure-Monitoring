@@ -1,0 +1,25 @@
+groups:
+  - name: service_alerts
+    interval: 15s
+    rules:
+      - alert: SystemdServiceFailed
+        expr: node_systemd_unit_state{state="failed"} == 1
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Systemd service {{ $labels.name }} has failed on {{ $labels.instance }}"
+          description: "The systemd service {{ $labels.name }} on {{ $labels.instance }} is in a failed state."
+          current_value: "failed"
+          recommended_action: "Check service logs with 'journalctl -u {{ $labels.name }} --no-pager -n 50'. Attempt restart with 'systemctl restart {{ $labels.name }}'. Investigate root cause of failure."
+
+      - alert: SystemdServiceNotActive
+        expr: node_systemd_unit_state{state="active"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Systemd service {{ $labels.name }} is not active on {{ $labels.instance }}"
+          description: "The systemd service {{ $labels.name }} on {{ $labels.instance }} has not been in an active state for over 1 minute."
+          current_value: "inactive"
+          recommended_action: "Check service status with 'systemctl status {{ $labels.name }}'. Review logs with 'journalctl -u {{ $labels.name }}'. Verify service configuration and dependencies."

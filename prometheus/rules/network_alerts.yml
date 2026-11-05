@@ -1,0 +1,36 @@
+groups:
+  - name: network_alerts
+    interval: 15s
+    rules:
+      - alert: HighNetworkReceive
+        expr: rate(node_network_receive_bytes_total{device!="lo"}[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network receive rate on {{ $labels.instance }} ({{ $labels.device }})"
+          description: "Network receive rate on {{ $labels.instance }} interface {{ $labels.device }} is {{ $value | printf \"%.1f\" }} bytes/s (> 100MB/s)."
+          current_value: "{{ $value | printf \"%.1f\" }} bytes/s"
+          recommended_action: "Investigate incoming traffic sources. Check for DDoS attacks, large file transfers, or unexpected replication traffic. Consider rate limiting or traffic shaping."
+
+      - alert: HighNetworkTransmit
+        expr: rate(node_network_transmit_bytes_total{device!="lo"}[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network transmit rate on {{ $labels.instance }} ({{ $labels.device }})"
+          description: "Network transmit rate on {{ $labels.instance }} interface {{ $labels.device }} is {{ $value | printf \"%.1f\" }} bytes/s (> 100MB/s)."
+          current_value: "{{ $value | printf \"%.1f\" }} bytes/s"
+          recommended_action: "Investigate outgoing traffic. Check for data exfiltration, large backups, or misconfigured services sending excessive data. Consider bandwidth throttling."
+
+      - alert: NetworkErrors
+        expr: rate(node_network_receive_errs_total{device!="lo"}[5m]) + rate(node_network_transmit_errs_total{device!="lo"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Network errors detected on {{ $labels.instance }} ({{ $labels.device }})"
+          description: "Network errors are occurring on {{ $labels.instance }} interface {{ $labels.device }} at a rate of {{ $value | printf \"%.1f\" }} errors/s."
+          current_value: "{{ $value | printf \"%.1f\" }} errors/s"
+          recommended_action: "Check network interface health with 'ethtool {{ $labels.device }}'. Inspect cabling, switch ports, and NIC drivers. Look for duplex mismatches or hardware failures."

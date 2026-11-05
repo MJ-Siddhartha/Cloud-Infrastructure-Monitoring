@@ -1,0 +1,36 @@
+groups:
+  - name: disk_alerts
+    interval: 30s
+    rules:
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+          description: "Disk space available on {{ $labels.instance }} mount {{ $labels.mountpoint }} is {{ $value | printf \"%.1f\" }}%, below the 15% warning threshold."
+          current_value: "{{ $value | printf \"%.1f\" }}% available"
+          recommended_action: "Clean up old logs, temporary files, and unused Docker images. Run 'du -sh /*' to identify large directories. Consider expanding the disk."
+
+      - alert: CriticalDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) * 100 < 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+          description: "Disk space available on {{ $labels.instance }} mount {{ $labels.mountpoint }} is {{ $value | printf \"%.1f\" }}%, below the 5% critical threshold. System may become unstable."
+          current_value: "{{ $value | printf \"%.1f\" }}% available"
+          recommended_action: "Immediate action required. Free disk space urgently. Remove old logs with 'journalctl --vacuum-size=100M'. Prune Docker with 'docker system prune -af'. Expand disk if possible."
+
+      - alert: HighDiskIO
+        expr: rate(node_disk_io_time_seconds_total[5m]) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk I/O utilization on {{ $labels.instance }} ({{ $labels.device }})"
+          description: "Disk I/O utilization on {{ $labels.instance }} device {{ $labels.device }} is {{ $value | printf \"%.1f\" }}%, exceeding the 90% warning threshold."
+          current_value: "{{ $value | printf \"%.1f\" }}%"
+          recommended_action: "Investigate I/O-heavy processes using 'iotop' or 'iostat'. Consider optimizing database queries, enabling caching, or upgrading to faster storage (SSD/NVMe)."

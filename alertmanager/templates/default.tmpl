@@ -1,0 +1,90 @@
+{{ define "__alertmanager_url" }}http://localhost:9093{{ end }}
+{{ define "__prometheus_url" }}http://localhost:9090{{ end }}
+
+{{ define "default.title" -}}
+[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.SortedPairs.Values | join " " }}
+{{- end }}
+
+{{ define "default.description" -}}
+{{ range .Alerts }}
+Alert: {{ .Labels.alertname }}
+Severity: {{ .Labels.severity }}
+Instance: {{ .Labels.instance }}
+Description: {{ .Annotations.description }}
+Value: {{ .Annotations.current_value }}
+Started: {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+{{ if .Annotations.recommended_action }}Action: {{ .Annotations.recommended_action }}{{ end }}
+---
+{{ end }}
+{{- end }}
+
+{{ define "default.html" -}}
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .header { padding: 20px; color: white; text-align: center; }
+    .header.firing { background-color: #dc3545; }
+    .header.resolved { background-color: #28a745; }
+    .content { padding: 20px; }
+    .alert-card { border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-bottom: 15px; }
+    .label { font-weight: bold; color: #495057; }
+    .value { color: #212529; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 8px; border-bottom: 1px solid #eee; }
+    td:first-child { width: 140px; font-weight: bold; color: #6c757d; }
+    .severity-critical { color: #dc3545; font-weight: bold; }
+    .severity-warning { color: #ffc107; font-weight: bold; }
+    .footer { padding: 15px 20px; background-color: #f8f9fa; text-align: center; font-size: 12px; color: #6c757d; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header {{ if eq .Status "firing" }}firing{{ else }}resolved{{ end }}">
+      <h2>{{ if eq .Status "firing" }}🔴 Alert Firing{{ else }}✅ Alert Resolved{{ end }}</h2>
+      <p>{{ .GroupLabels.alertname }}</p>
+    </div>
+    <div class="content">
+      {{ range .Alerts }}
+      <div class="alert-card">
+        <table>
+          <tr><td>Alert</td><td>{{ .Labels.alertname }}</td></tr>
+          <tr><td>Severity</td><td class="severity-{{ .Labels.severity }}">{{ .Labels.severity }}</td></tr>
+          <tr><td>Instance</td><td>{{ .Labels.instance }}</td></tr>
+          <tr><td>Description</td><td>{{ .Annotations.description }}</td></tr>
+          <tr><td>Current Value</td><td>{{ .Annotations.current_value }}</td></tr>
+          <tr><td>Started</td><td>{{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}</td></tr>
+          {{ if .Annotations.recommended_action }}<tr><td>Action</td><td>{{ .Annotations.recommended_action }}</td></tr>{{ end }}
+        </table>
+      </div>
+      {{ end }}
+    </div>
+    <div class="footer">
+      <p>Sent by Cloud Monitoring Alertmanager</p>
+      <p><a href="{{ template "__alertmanager_url" . }}">Alertmanager</a> | <a href="{{ template "__prometheus_url" . }}">Prometheus</a></p>
+    </div>
+  </div>
+</body>
+</html>
+{{- end }}
+
+{{ define "telegram.default" -}}
+{{ if eq .Status "firing" }}🔴 <b>ALERT FIRING</b>{{ else }}✅ <b>RESOLVED</b>{{ end }}
+
+<b>Group:</b> {{ .GroupLabels.alertname }}
+<b>Status:</b> {{ .Status | toUpper }}
+<b>Active Alerts:</b> {{ .Alerts | len }}
+
+{{ range .Alerts -}}
+━━━━━━━━━━━━━━━━━━━━
+<b>Alert:</b> {{ .Labels.alertname }}
+<b>Severity:</b> {{ .Labels.severity }}
+<b>Instance:</b> {{ .Labels.instance }}
+<b>Description:</b> {{ .Annotations.description }}
+<b>Value:</b> {{ .Annotations.current_value }}
+<b>Started:</b> {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+{{ if .Annotations.recommended_action }}<b>Action:</b> {{ .Annotations.recommended_action }}{{ end }}
+{{ end -}}
+{{- end }}

@@ -1,0 +1,25 @@
+groups:
+  - name: cpu_alerts
+    interval: 15s
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected on {{ $labels.instance }}"
+          description: "CPU utilization on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%, exceeding the 85% warning threshold."
+          current_value: "{{ $value | printf \"%.1f\" }}%"
+          recommended_action: "Investigate high CPU processes using 'top' or 'htop'. Consider scaling horizontally or optimizing CPU-intensive workloads."
+
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU usage detected on {{ $labels.instance }}"
+          description: "CPU utilization on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%, exceeding the 95% critical threshold."
+          current_value: "{{ $value | printf \"%.1f\" }}%"
+          recommended_action: "Immediate action required. Identify and terminate or throttle runaway processes. Consider emergency scaling or load shedding."

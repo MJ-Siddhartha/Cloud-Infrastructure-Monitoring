@@ -1,0 +1,36 @@
+groups:
+  - name: node_alerts
+    interval: 15s
+    rules:
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node exporter is down on {{ $labels.instance }}"
+          description: "The node exporter target {{ $labels.instance }} has been unreachable for more than 1 minute."
+          current_value: "down"
+          recommended_action: "Verify the host is reachable via ping. Check if node_exporter process is running. Verify firewall rules allow port 9100. SSH into the server and restart node_exporter if needed."
+
+      - alert: NodeExporterHighRestarts
+        expr: changes(process_start_time_seconds{job="node-exporter"}[1h]) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node exporter has restarted frequently on {{ $labels.instance }}"
+          description: "Node exporter on {{ $labels.instance }} has restarted {{ $value | printf \"%.0f\" }} times in the last hour."
+          current_value: "{{ $value | printf \"%.0f\" }} restarts/hour"
+          recommended_action: "Investigate node_exporter stability. Check system logs for OOM kills or crashes. Verify resource limits and systemd service configuration. Review node_exporter logs for errors."
+
+      - alert: PrometheusTargetMissing
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus target {{ $labels.instance }} is down"
+          description: "The Prometheus target {{ $labels.instance }} (job: {{ $labels.job }}) has been unreachable for more than 2 minutes."
+          current_value: "down"
+          recommended_action: "Check if the target service is running and healthy. Verify network connectivity and firewall rules. Review the target's logs for errors."
