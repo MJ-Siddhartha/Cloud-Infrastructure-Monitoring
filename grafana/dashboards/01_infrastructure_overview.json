@@ -713,7 +713,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100)",
+          "expr": "100 - (max by (instance) (node_filesystem_avail_bytes) / max by (instance) (node_filesystem_size_bytes) * 100)",
           "legendFormat": "{{instance}}",
           "refId": "A",
           "editorMode": "code",
