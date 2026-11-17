@@ -7,6 +7,7 @@ groups:
         for: 10s
         labels:
           severity: critical
+          category: service
         annotations:
           summary: "Systemd service {{ $labels.name }} has failed on {{ $labels.instance }}"
           description: "The systemd service {{ $labels.name }} on {{ $labels.instance }} is in a failed state."
@@ -18,6 +19,7 @@ groups:
         for: 1m
         labels:
           severity: warning
+          category: service
         annotations:
           summary: "Systemd service {{ $labels.name }} is not active on {{ $labels.instance }}"
           description: "The systemd service {{ $labels.name }} on {{ $labels.instance }} has not been in an active state for over 1 minute."

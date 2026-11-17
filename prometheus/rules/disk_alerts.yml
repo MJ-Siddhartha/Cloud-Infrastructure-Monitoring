@@ -7,6 +7,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          category: disk
         annotations:
           summary: "Low disk space on {{ $labels.instance }} ({{ $labels.mountpoint }})"
           description: "Disk space available on {{ $labels.instance }} mount {{ $labels.mountpoint }} is {{ $value | printf \"%.1f\" }}%, below the 15% warning threshold."
@@ -18,6 +19,7 @@ groups:
         for: 2m
         labels:
           severity: critical
+          category: disk
         annotations:
           summary: "Critical disk space on {{ $labels.instance }} ({{ $labels.mountpoint }})"
           description: "Disk space available on {{ $labels.instance }} mount {{ $labels.mountpoint }} is {{ $value | printf \"%.1f\" }}%, below the 5% critical threshold. System may become unstable."
@@ -29,6 +31,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          category: disk
         annotations:
           summary: "High disk I/O utilization on {{ $labels.instance }} ({{ $labels.device }})"
           description: "Disk I/O utilization on {{ $labels.instance }} device {{ $labels.device }} is {{ $value | printf \"%.1f\" }}%, exceeding the 90% warning threshold."

@@ -53,3 +53,12 @@ class Incident(Base):
 
     def __repr__(self) -> str:
         return f"<Incident(id={self.id}, alert_name='{self.alert_name}', status='{self.status}')>"
+
+
+class RecoveryCooldown(Base):
+    """Shared cooldown reservations, so that all backend workers see the same state."""
+
+    __tablename__ = "recovery_cooldowns"
+
+    key = Column(String(255), primary_key=True)
+    reserved_at = Column(DateTime(timezone=True), nullable=False)

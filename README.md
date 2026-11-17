@@ -61,9 +61,9 @@ flowchart TD
     VM2 -->|Scraped /metrics| Prometheus
     Prometheus -->|Data Source| Grafana
     Prometheus -->|Firing / Resolved Alerts| Alertmanager
-    Alertmanager -->|Critical & Warning Alerts| Telegram
-    Alertmanager -->|Critical Alerts| SMTP
     Alertmanager -->|Webhook Event| Backend
+    Backend -->|New incident| Telegram
+    Backend -->|New incident| SMTP
     Backend -->|Persist & Update| PostgreSQL
     Backend -->|Trigger Action| RecoveryEngine
     RecoveryEngine -.->|SSH systemctl / safe cleanup| VM1
@@ -76,7 +76,7 @@ flowchart TD
 
 | Component | Technology | Version | Purpose |
 |---|---|---|---|
-| Target Machines | Ubuntu Linux | 22.04 LTS / 24.04 LTS | Workload virtual machines running in VirtualBox |
+| Target Machines | Ubuntu Linux | 22.04 LTS | Lab: Docker containers `app-server-01`, `db-server-01` (same config works for VMs / separate hosts) |
 | Metric Exporter | Prometheus Node Exporter | v1.8.2 | Exposes OS and hardware metrics on `:9100/metrics` |
 | Monitoring Engine | Prometheus | v2.54.1 | Metric scraping, TSDB storage, and PromQL evaluation |
 | Visualization | Grafana | v11.4.0 | Real-time monitoring and operational dashboards |
@@ -89,6 +89,11 @@ flowchart TD
 ---
 
 ## 6. VM and Network Requirements
+
+> **Evaluated deployment.** The measured results in Section 18 were obtained on a single laptop with all
+> components (including the two Ubuntu target nodes) running as Docker containers. The VirtualBox topology
+> below is the supported multi-machine layout: the recovery engine connects to whichever host is named in
+> the alert's `instance` label over key-based SSH, so no code changes are needed for separate machines.
 
 ### VirtualBox Network Topology
 - **Host-Only Network:** `vboxnet0`
@@ -120,6 +125,10 @@ chmod +x scripts/*.sh
 - **Grafana:** `http://localhost:3000` (User: `admin`, Password in `.env`)
 - **Alertmanager:** `http://localhost:9093`
 - **FastAPI Documentation:** `http://localhost:8000/docs`
+
+**Security defaults:** all ports are published on `127.0.0.1` only; PostgreSQL is reachable only inside the
+Docker network; `POSTGRES_PASSWORD` and `GF_SECURITY_ADMIN_PASSWORD` must be set in `.env` (no built-in
+defaults); `.env` and `keys/` are git-ignored; target nodes accept key-based SSH only.
 
 ---
 
@@ -168,9 +177,9 @@ Dashboards are provisioned automatically via `grafana/provisioning/`:
 ## 11. Alertmanager Configuration
 
 Configured in `alertmanager/alertmanager.yml`:
-- **Grouping:** Grouped by `['alertname', 'instance']` with `group_wait: 30s` and `group_interval: 5m`.
-- **Inhibition:** Suppresses `warning` alerts when a corresponding `critical` alert is active.
-- **Routing:** Directs critical alerts to Telegram + SMTP + Webhook; warnings to Telegram + Webhook.
+- **Grouping:** Grouped by `['alertname', 'instance']`; `group_wait` 5 s for critical and 15 s for warning alerts, `group_interval: 1m`.
+- **Routing:** Every alert matches exactly one route (no `continue`) and is delivered once to the FastAPI webhook, which stores the incident and sends the Telegram / e-mail notification.
+- **Inhibition:** A critical alert suppresses the warning alert of the same problem — equal `instance`, `category` (cpu, memory, disk, network, availability, service), `name` and `mountpoint`. Every rule carries a `category` label for this purpose (e.g. `CriticalCPUUsage` inhibits `HighCPUUsage` on the same node).
 
 ---
 
@@ -198,6 +207,8 @@ SMTP_FROM_EMAIL="alerts@monitoring.local"
 SMTP_TO_EMAIL="sre-team@example.com"
 ```
 
+For Gmail, `SMTP_PASSWORD` must be a 16-character App Password (Google Account → Security → 2-Step Verification → App passwords) for the same account as `SMTP_USERNAME`; the normal account password is rejected with `535 BadCredentials`.
+
 ---
 
 ## 14. FastAPI Backend Setup
@@ -223,10 +234,12 @@ Managed via Alembic in `backend/migrations/`:
 ## 16. Automated Recovery Configuration
 
 Security controls implemented:
-- **Allowlists:** `ALLOWED_RECOVERY_HOSTS` and `ALLOWED_RECOVERY_SERVICES`.
-- **Cooldown:** `RECOVERY_COOLDOWN_SECONDS` (default: 300s) prevents restart loops.
+- **Playbooks:** only `SystemdServiceFailed`/`SystemdServiceNotActive` (restart the service named in the alert) and `LowDiskSpace`/`CriticalDiskSpace` (delete files older than 7 days in `/tmp`, `/var/tmp`; vacuum journald) are mapped. CPU and memory alerts are notified, not auto-remediated.
+- **Allowlists:** `ALLOWED_RECOVERY_HOSTS` and `ALLOWED_RECOVERY_SERVICES`; service names are also validated against `^[A-Za-z0-9_.@-]+$`.
+- **Cooldown:** `RECOVERY_COOLDOWN_SECONDS` (default: 300 s; 120 s in the lab `.env`). The engine is a process-wide singleton and the window is enforced per alert fingerprint *and* per target (playbook + host + service), so flapping alerts and duplicate alerts for one fault cannot cause restart loops.
 - **Dry-run Mode:** `RECOVERY_DRY_RUN=true` logs remediation steps without altering machines.
-- **Post-Verification:** Queries `systemctl is-active <service>` before declaring success.
+- **Post-Verification:** `systemctl is-active <service>` (or `service <svc> status` on hosts without systemd as PID 1) must confirm the service is running before success is recorded.
+- **SSH security:** key-only login (`keys/recovery_id_rsa`, generated by `setup_monitoring.sh`, mounted read-only into the backend); target `sudo` is restricted to `systemctl`, `service`, `find` and `journalctl`; set `SSH_KNOWN_HOSTS_PATH` to enforce strict host-key checking (otherwise unknown host keys are accepted with a logged warning).
 
 ---
 
@@ -242,19 +255,37 @@ Run reproducible tests with `scripts/run_fault_injection.sh`:
 
 ## 18. Performance Evaluation (SRE Metrics)
 
-Measured via `scripts/collect_metrics.sh`:
+Measured on 17 Nov 2026 with `scripts/run_experiments.py` against the live stack (single laptop,
+targets as Docker containers, live SSH recovery, dry-run off). Raw data: [`results/`](results/README.md).
 
-| Metric | Target | Measured Result | Evaluation |
+| Metric | Target | Measured | Evaluation |
 |---|---|---|---|
-| **Alert Latency (MTTD)** | $< 30\text{s}$ (firing-to-notify) | $12.4\text{s}$ | **PASSED** |
-| **Mean Time to Recover (MTTR)** | $< 60\text{s}$ | $8.2\text{s}$ | **PASSED** |
-| **Agent CPU Footprint** | $< 2.0\%$ | $0.4\%$ | **PASSED** |
-| **Agent Memory Footprint** | $< 50\text{ MB}$ | $22.8\text{ MB}$ | **PASSED** |
-| **Scrape Success Rate** | $> 99.9\%$ | $100.0\%$ | **PASSED** |
-| **Webhook Latency (P50)** | $< 50\text{ ms}$ | $18.5\text{ ms}$ | **PASSED** |
-| **Webhook Latency (P99)** | $< 150\text{ ms}$ | $44.2\text{ ms}$ | **PASSED** |
+| **Alert firing → Telegram delivered (MTTD)** | < 30 s | 15.7 s (10 runs, 15.6–15.9) | **PASSED** |
+| **Alert firing → e-mail accepted** | < 30 s | 20.5 s mean, 19.1 s median (10/10 delivered) | **PASSED** |
+| **Incident → verified recovery (MTTR)** | < 60 s | 1.27 s (10 runs, 1.16–1.50) | **PASSED** |
+| **Recovery success (live SSH restart + verification)** | — | 10 / 10 | **PASSED** |
+| **Node Exporter CPU (max)** | < 2.0 % | 0.20 % of one core | **PASSED** |
+| **Node Exporter memory (max RSS)** | < 50 MB | 20.7 MB | **PASSED** |
+| **Scrape success (node targets, 1 h)** | > 99.9 % | 100 % (240/240 each) | **PASSED** |
+| **Webhook P50 / P99 (inside Docker network)** | < 50 / < 150 ms | 5.5 / 9.2 ms | **PASSED** |
+| **Webhook P50 / P99 (from Windows host)** | < 50 / < 150 ms | 6.0 / 9.3 ms | **PASSED** |
+| **Burst of 30 simultaneous webhooks (median)** | < 150 ms | 136.0 ms | **PASSED** |
+| **Throughput, 50 concurrent clients (4 workers)** | — | 525 req/s, P50 72 ms | — |
 
-> **Note on MTTD Measurement:** A CPU alert configured with a 2-minute sustained threshold requires 120s of sustained fault before firing. MTTD measured from *alert firing* to notification delivery is $\sim 12.4\text{s}$ (well within the $<30\text{s}$ target), whereas total time from initial threshold crossing is $120\text{s} + 12.4\text{s} = 132.4\text{s}$.
+End to end, a stopped nginx was stored as an incident **50.1 s** after the fault, Telegram arrived at
+**50.9 s**, e-mail at **55.8 s**, and the service was running again (verified) at **51.4 s**; the alert
+resolved at **65.2 s**. The fault-to-incident time depends on where the fault falls in the 15 s
+evaluation cycle (model range 20–52 s; an earlier series at a different phase gave 36.3 s). Other
+experiments: CPU saturation (90.3 % peak) fired HighCPU at 68–73 s and CriticalCPU at 84–88 s with no
+recovery attempted; memory pressure (76.9 % peak) fired HighMemoryUsage at 43–47 s; the cooldown skipped
+a second failure 59.4 s after a recovery (no restart loop); the disk-cleanup playbook deleted exactly the
+three 10-day-old test files in 0.37 s. Tests: 30/30 unit, 10/10 verification, 7/7 integration, 2/2
+performance.
+
+> **Notes.** All nodes share one kernel, so CPU/memory values are identical on every node. Service runs
+> 2–10 started at the same point of the 15 s evaluation cycle, so their spread is smaller than for faults
+> at random times; the configuration-based model in the report predicts 20–52 s fault-to-incident.
+> The backend runs 4 worker processes (`BACKEND_WORKERS`); the recovery cooldown is shared through PostgreSQL.
 
 ---
 

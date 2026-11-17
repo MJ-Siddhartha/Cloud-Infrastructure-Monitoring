@@ -1,0 +1,37 @@
+{
+  "sequential": {
+    "requests": 500,
+    "concurrency": 1,
+    "errors": 0,
+    "throughput_rps": 161.6,
+    "mean_ms": 6.18,
+    "p50_ms": 5.98,
+    "p95_ms": 7.52,
+    "p99_ms": 9.34,
+    "max_ms": 12.01
+  },
+  "concurrent_10": {
+    "requests": 500,
+    "concurrency": 10,
+    "errors": 0,
+    "throughput_rps": 792.9,
+    "mean_ms": 12.24,
+    "p50_ms": 11.8,
+    "p95_ms": 17.51,
+    "p99_ms": 23.48,
+    "max_ms": 28.35
+  },
+  "concurrent_50": {
+    "requests": 500,
+    "concurrency": 50,
+    "errors": 0,
+    "throughput_rps": 525.3,
+    "mean_ms": 86.4,
+    "p50_ms": 72.24,
+    "p95_ms": 212.51,
+    "p99_ms": 271.78,
+    "max_ms": 358.84
+  },
+  "note": "each request creates a new incident in PostgreSQL; notifications disabled during the benchmark",
+  "client_location": "host (Windows -> Docker Desktop port forwarding)"
+}

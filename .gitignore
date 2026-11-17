@@ -17,3 +17,14 @@ alertmanager_data/
 *.log
 .DS_Store
 Thumbs.db
+keys/
+
+# Report deliverables (kept out of the repository)
+Report/
+*.pptx
+*.zip
+*.rar
+MTech_Project_Report_Template.*
+MTech_Projrct_Report_Template.*
+results_service_run.log
+MTech_Project_Report*.pdf

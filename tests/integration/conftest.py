@@ -4,10 +4,10 @@ import os
 import pytest
 import httpx
 
-PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
-ALERTMANAGER_URL = os.getenv("ALERTMANAGER_URL", "http://localhost:9093")
-GRAFANA_URL = os.getenv("GRAFANA_URL", "http://localhost:3000")
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://127.0.0.1:9090")
+ALERTMANAGER_URL = os.getenv("ALERTMANAGER_URL", "http://127.0.0.1:9093")
+GRAFANA_URL = os.getenv("GRAFANA_URL", "http://127.0.0.1:3000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 
 @pytest.fixture

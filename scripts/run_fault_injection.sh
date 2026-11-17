@@ -124,6 +124,7 @@ test_disk() {
     
     run_remote_or_local "
         TEST_DIR='/tmp/monitoring_test_disk'
+        trap 'rm -rf \"\$TEST_DIR\"; echo Cleanup trap: test file removed.' EXIT INT TERM
         mkdir -p \"\$TEST_DIR\"
         FREE_KB=\$(df --output=avail \"/tmp\" | tail -n1)
         TARGET_FILL_KB=\$(( FREE_KB * 85 / 100 ))

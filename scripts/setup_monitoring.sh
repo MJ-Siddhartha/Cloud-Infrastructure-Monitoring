@@ -56,6 +56,15 @@ else
     echo -e "${GREEN}--> Found existing .env configuration.${NC}"
 fi
 
+# Step 2b: SSH key pair used by the recovery engine (key-only login on targets)
+if [[ ! -f "keys/recovery_id_rsa" ]]; then
+    echo -e "${YELLOW}--> Generating recovery SSH key pair in keys/ ...${NC}"
+    mkdir -p keys
+    ssh-keygen -q -t rsa -b 3072 -m PEM -N "" -C "cloud-monitoring-recovery" -f keys/recovery_id_rsa
+else
+    echo -e "${GREEN}--> Found existing recovery SSH key (keys/recovery_id_rsa).${NC}"
+fi
+
 # Step 3: Validate configuration syntax
 echo -e "\n${YELLOW}--> Validating configuration files...${NC}"
 if [[ -f "${SCRIPT_DIR}/validate_config.sh" ]]; then

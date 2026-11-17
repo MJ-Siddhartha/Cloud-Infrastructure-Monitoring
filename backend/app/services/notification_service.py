@@ -55,13 +55,15 @@ async def send_telegram_notification(alert_data: dict) -> None:
                 logger.error("Telegram API responded with error %s: %s", response.status_code, response.text)
                 # Retry with plain text without formatting
                 payload.pop("parse_mode", None)
-                await client.post(url, json=payload)
-            else:
+                response = await client.post(url, json=payload)
+            if response.status_code == 200:
                 logger.info("Telegram notification sent for alert=%s", alert_data.get("alert_name"))
-    except httpx.HTTPError as exc:
-        logger.error("Failed to send Telegram notification: %s", exc)
+            else:
+                logger.error("Telegram plain-text retry failed with status %s", response.status_code)
     except Exception as exc:
-        logger.error("Unexpected error sending Telegram notification: %s", exc)
+        # Never log the exception text unredacted: it can contain the API URL (with the token).
+        detail = str(exc).replace(settings.TELEGRAM_BOT_TOKEN, "***")
+        logger.error("Failed to send Telegram notification: %s", detail)
 
 
 async def send_email_notification(alert_data: dict) -> None:
@@ -84,11 +86,17 @@ async def send_email_notification(alert_data: dict) -> None:
         smtp_kwargs: dict = {
             "hostname": settings.SMTP_HOST,
             "port": settings.SMTP_PORT,
+            "timeout": 30,
         }
+        # Port 465 uses implicit TLS; other ports (587) upgrade with STARTTLS.
+        if settings.SMTP_PORT == 465:
+            smtp_kwargs["use_tls"] = True
+        else:
+            smtp_kwargs["start_tls"] = True
         if settings.SMTP_USERNAME and settings.SMTP_PASSWORD:
             smtp_kwargs["username"] = settings.SMTP_USERNAME
-            smtp_kwargs["password"] = settings.SMTP_PASSWORD
-            smtp_kwargs["use_tls"] = True
+            # Google shows app passwords in groups of four; the real value has no spaces.
+            smtp_kwargs["password"] = settings.SMTP_PASSWORD.replace(" ", "")
 
         await aiosmtplib.send(msg, **smtp_kwargs)
         logger.info("Email notification sent for alert=%s", alert_data.get("alert_name"))

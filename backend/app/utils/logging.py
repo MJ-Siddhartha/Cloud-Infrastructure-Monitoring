@@ -52,6 +52,11 @@ def setup_logging(level: str = "INFO") -> None:
     # Silence noisy libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    # httpx/httpcore log full request URLs at INFO; the Telegram Bot API URL
+    # contains the bot token, so these must never be logged below WARNING.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    # paramiko's WarningPolicy logs unknown host keys at WARNING (kept visible)
 
 
 def get_logger(name: str) -> logging.Logger:

@@ -7,6 +7,7 @@ groups:
         for: 15s
         labels:
           severity: warning
+          category: memory
         annotations:
           summary: "High memory usage detected on {{ $labels.instance }}"
           description: "Memory utilization on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%, exceeding the 60% warning threshold."
@@ -18,6 +19,7 @@ groups:
         for: 15s
         labels:
           severity: critical
+          category: memory
         annotations:
           summary: "Critical memory usage detected on {{ $labels.instance }}"
           description: "Memory utilization on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%, exceeding the 80% critical threshold."

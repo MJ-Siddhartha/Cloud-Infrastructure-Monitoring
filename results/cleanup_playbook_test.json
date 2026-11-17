@@ -1,0 +1,20 @@
+{
+  "webhook_response": {
+    "status": "accepted",
+    "processed": 1
+  },
+  "files_before": [
+    "-rw-r--r-- 1 root root 1048576 Nov  7 13:57 /tmp/exp_old_0.log",
+    "-rw-r--r-- 1 root root 1048576 Nov  7 13:57 /tmp/exp_old_1.log",
+    "-rw-r--r-- 1 root root 1048576 Nov  7 13:57 /tmp/exp_old_2.log",
+    "-rw-r--r-- 1 root root       7 Nov 17 13:57 /tmp/exp_recent.log"
+  ],
+  "files_after": [
+    "-rw-r--r-- 1 root root 7 Nov 17 13:57 /tmp/exp_recent.log"
+  ],
+  "old_files_deleted": true,
+  "recent_file_kept": true,
+  "recovery_status": "success",
+  "recovery_output": "$ find /tmp -xdev -type f -mtime +7 -print -delete (exit 0)\n/tmp/exp_old_1.log\n/tmp/exp_old_2.log\n/tmp/exp_old_0.log\n\n$ find /var/tmp -xdev -type f -mtime +7 -print -delete (exit 0)\n\n$ journalctl --vacuum-time=3d (exit 0)\n",
+  "incident_to_recovered_s": 0.367
+}

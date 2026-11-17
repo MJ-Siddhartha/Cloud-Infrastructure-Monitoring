@@ -1,0 +1,37 @@
+{
+  "sequential": {
+    "requests": 500,
+    "concurrency": 1,
+    "errors": 0,
+    "throughput_rps": 172.3,
+    "mean_ms": 5.79,
+    "p50_ms": 5.51,
+    "p95_ms": 7.88,
+    "p99_ms": 9.15,
+    "max_ms": 11.58
+  },
+  "concurrent_10": {
+    "requests": 500,
+    "concurrency": 10,
+    "errors": 0,
+    "throughput_rps": 903.5,
+    "mean_ms": 10.75,
+    "p50_ms": 10.22,
+    "p95_ms": 14.97,
+    "p99_ms": 20.47,
+    "max_ms": 22.82
+  },
+  "concurrent_50": {
+    "requests": 500,
+    "concurrency": 50,
+    "errors": 0,
+    "throughput_rps": 554.2,
+    "mean_ms": 84.14,
+    "p50_ms": 58.23,
+    "p95_ms": 232.74,
+    "p99_ms": 254.47,
+    "max_ms": 261.43
+  },
+  "note": "each request creates a new incident in PostgreSQL; notifications disabled during the benchmark",
+  "client_location": "inside the backend container (Docker network)"
+}

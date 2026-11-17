@@ -7,6 +7,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          category: network
         annotations:
           summary: "High network receive rate on {{ $labels.instance }} ({{ $labels.device }})"
           description: "Network receive rate on {{ $labels.instance }} interface {{ $labels.device }} is {{ $value | printf \"%.1f\" }} bytes/s (> 100MB/s)."
@@ -18,6 +19,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          category: network
         annotations:
           summary: "High network transmit rate on {{ $labels.instance }} ({{ $labels.device }})"
           description: "Network transmit rate on {{ $labels.instance }} interface {{ $labels.device }} is {{ $value | printf \"%.1f\" }} bytes/s (> 100MB/s)."
@@ -29,6 +31,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          category: network
         annotations:
           summary: "Network errors detected on {{ $labels.instance }} ({{ $labels.device }})"
           description: "Network errors are occurring on {{ $labels.instance }} interface {{ $labels.device }} at a rate of {{ $value | printf \"%.1f\" }} errors/s."

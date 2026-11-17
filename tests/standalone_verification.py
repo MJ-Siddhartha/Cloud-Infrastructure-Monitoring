@@ -196,6 +196,26 @@ def test_alertmanager_config():
 
 run_test("Alertmanager routing, inhibition, and multi-receivers configured", test_alertmanager_config)
 
+def test_inhibition_matches_rule_pairs():
+    """Every critical/warning pair must share the labels used by the inhibit rule."""
+    am_path = PROJECT_ROOT / "alertmanager" / "alertmanager.yml"
+    with open(am_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    equal = set(data["inhibit_rules"][0]["equal"])
+    # alertname differs between warning/critical variants, so it must not be required
+    assert "alertname" not in equal, "inhibition requires equal alertname; it can never match"
+    assert {"instance", "category"} <= equal
+    for rule_file in (PROJECT_ROOT / "prometheus" / "rules").glob("*.yml"):
+        with open(rule_file, "r", encoding="utf-8") as f:
+            for group in yaml.safe_load(f)["groups"]:
+                for rule in group["rules"]:
+                    assert "category" in rule["labels"], f"{rule['alert']} has no category label"
+    # No route may use `continue`, otherwise an alert is delivered more than once
+    for route in data["route"].get("routes", []):
+        assert not route.get("continue", False), "route uses continue: duplicate delivery"
+
+run_test("Inhibition rule can match warning/critical pairs; no duplicate routes", test_inhibition_matches_rule_pairs)
+
 # ------------------------------------------------------------------------------
 # 6. Grafana Dashboards Schema Validation
 # ------------------------------------------------------------------------------

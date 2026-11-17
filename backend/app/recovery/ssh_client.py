@@ -22,11 +22,25 @@ class SSHClient:
         key_path: str = "~/.ssh/id_rsa",
         username: str = "monitor",
         timeout: int = 30,
+        known_hosts_path: str | None = None,
     ) -> None:
         self.key_path = os.path.expanduser(key_path)
         self.username = username
         self.timeout = timeout
+        self.known_hosts_path = os.path.expanduser(known_hosts_path) if known_hosts_path else None
         self._connections: dict = {}
+
+    def _load_private_key(self):
+        """Load an RSA or Ed25519 private key from ``key_path``."""
+        errors = []
+        for key_cls in (paramiko.RSAKey, paramiko.Ed25519Key, paramiko.ECDSAKey):
+            try:
+                return key_cls.from_private_key_file(self.key_path)
+            except FileNotFoundError:
+                raise
+            except Exception as exc:  # wrong key type, try the next one
+                errors.append(f"{key_cls.__name__}: {exc}")
+        raise paramiko.SSHException("Unsupported private key: " + "; ".join(errors))
 
     def connect(self, hostname: str):
         """Open (or return a cached) SSH connection to *hostname*."""
@@ -40,10 +54,16 @@ class SSHClient:
             self._connections.pop(hostname, None)
 
         client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        if self.known_hosts_path and os.path.exists(self.known_hosts_path):
+            # Strict mode: only connect to hosts whose key is already known.
+            client.load_host_keys(self.known_hosts_path)
+            client.set_missing_host_key_policy(paramiko.RejectPolicy())
+        else:
+            # Lab mode: accept but log unknown host keys (never silently).
+            client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
         try:
-            pkey = paramiko.RSAKey.from_private_key_file(self.key_path)
+            pkey = self._load_private_key()
             client.connect(
                 hostname=hostname,
                 username=self.username,

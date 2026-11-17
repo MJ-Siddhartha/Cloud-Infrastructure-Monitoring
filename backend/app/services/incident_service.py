@@ -152,12 +152,15 @@ async def update_recovery_status(
     status: str,
     output: str | None = None,
     error: str | None = None,
+    action: str | None = None,
 ) -> Incident:
     """Update recovery fields on an incident."""
     result = await db.execute(select(Incident).where(Incident.id == incident_id))
     incident = result.scalar_one()
 
     incident.recovery_status = status
+    if action is not None:
+        incident.recovery_action = action
     if output is not None:
         incident.recovery_output = output
     if error is not None:

@@ -5,11 +5,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import time
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import text
 
-from app.database import AsyncSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import AsyncSessionLocal, get_db
 from app.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -72,11 +74,10 @@ async def metrics_endpoint() -> str:
 
 
 @router.get("/ready")
-async def readiness_check(response: Response) -> dict:
+async def readiness_check(response: Response, db: AsyncSession = Depends(get_db)) -> dict:
     """Readiness probe — verifies database connectivity."""
     try:
-        async with AsyncSessionLocal() as session:
-            await session.execute(text("SELECT 1"))
+        await db.execute(text("SELECT 1"))
         return {"status": "ready", "database": "connected"}
     except Exception as exc:
         logger.error("Readiness check failed: %s", exc)

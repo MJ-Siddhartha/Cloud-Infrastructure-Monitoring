@@ -1,3 +1,3 @@
-from app.models.incident import Incident
+from app.models.incident import Incident, RecoveryCooldown
 
-__all__ = ["Incident"]
+__all__ = ["Incident", "RecoveryCooldown"]

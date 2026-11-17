@@ -1,0 +1,10 @@
+# Test results - 2026-11-17T16:16:49Z (stack running, 4 backend workers, notifications disabled; clients use 127.0.0.1)
+## Backend unit tests
+30 passed in 0.51s
+## Verification suite
+VERIFICATION RESULTS: 10/10 PASSED (100.0%)
+## Integration tests (live stack)
+7 passed in 0.24s
+## Performance tests (live stack)
+[PERF RESULTS] Concurrency=30 | P50=136.03ms | P95=175.69ms | P99=176.15ms
+2 passed in 0.35s

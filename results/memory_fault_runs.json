@@ -1,0 +1,24 @@
+{
+  "runs": [
+    {
+      "run": 1,
+      "t0": "2026-11-17T13:49:04.421125+00:00",
+      "baseline_used_percent": 16.5,
+      "allocated_gib": 4.072,
+      "peak_used_percent": 76.94,
+      "pending_after_s": 16.658,
+      "firing_after_s": 46.572,
+      "incident_after_s": 61.536
+    },
+    {
+      "run": 2,
+      "t0": "2026-11-17T13:51:53.279047+00:00",
+      "baseline_used_percent": 16.6,
+      "allocated_gib": 4.064,
+      "peak_used_percent": 76.65,
+      "pending_after_s": 12.8,
+      "firing_after_s": 43.07,
+      "incident_after_s": 57.66
+    }
+  ]
+}

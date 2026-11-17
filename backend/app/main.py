@@ -31,16 +31,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Database initialised")
 
     if settings.RECOVERY_ENABLED:
-        from app.recovery.engine import RecoveryEngine
+        from app.recovery.engine import get_recovery_engine
 
-        _recovery_engine = RecoveryEngine(settings)
+        _recovery_engine = get_recovery_engine(settings)
         logger.info("Recovery engine started")
 
     yield
 
     # Shutdown
     if _recovery_engine is not None:
-        _recovery_engine.close()
+        from app.recovery.engine import reset_recovery_engine
+
+        reset_recovery_engine()
         logger.info("Recovery engine shut down")
     logger.info("Cloud Monitoring Backend stopped")
 

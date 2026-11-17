@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -35,6 +37,7 @@ class Settings(BaseSettings):
     SSH_KEY_PATH: str = "~/.ssh/id_rsa"
     SSH_USERNAME: str = "monitor"
     SSH_TIMEOUT: int = 30
+    SSH_KNOWN_HOSTS_PATH: str | None = None
 
     # Recovery engine
     RECOVERY_ENABLED: bool = False
@@ -60,8 +63,9 @@ class Settings(BaseSettings):
         return v
 
 
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Return a cached Settings instance."""
+    """Return a cached Settings instance (parsed once per process)."""
     return Settings()
 
 

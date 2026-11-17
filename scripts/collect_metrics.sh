@@ -58,7 +58,7 @@ if echo "$SCRAPE_DATA" | grep -q '"status":"success"'; then
         echo -e "    - Node [${INSTANCE}]: ${RATE}% availability"
     done
 else
-    echo -e "  • Target Availability: 100% (Baseline in active scrape interval)"
+    echo -e "  • Target Availability: UNKNOWN (Prometheus query failed - is Prometheus running?)"
 fi
 
 # 3. Webhook Ingestion Latency Benchmark
@@ -84,8 +84,18 @@ done
 if [[ $SAMPLES -gt 0 && $TOTAL_TIME -gt 0 ]]; then
     AVG_LATENCY=$(( TOTAL_TIME / SAMPLES ))
     echo -e "  • Processed Samples:     ${SAMPLES}"
+    SORTED=($(printf '%s
+' "${LATENCIES[@]}" | sort -n))
+    P50=${SORTED[$(( SAMPLES / 2 ))]}
+    P95=${SORTED[$(( SAMPLES * 95 / 100 ))]}
     echo -e "  • Mean Ingestion Time:   ${AVG_LATENCY} ms (Target: < 50ms)"
-    echo -e "  • Status:                ${GREEN}PASSED${NC}"
+    echo -e "  • P50 / P95:             ${P50} ms / ${P95} ms (round trip incl. curl start-up)"
+    if (( P50 < 50 )); then
+        echo -e "  • Status:                ${GREEN}PASSED${NC}"
+    else
+        echo -e "  • Status:                ${YELLOW}EXCEEDED TARGET${NC}"
+    fi
+    echo -e "  • Note: for precise percentiles use: python scripts/run_experiments.py bench"
 else
     echo -e "  • FastAPI benchmark endpoint ready."
 fi

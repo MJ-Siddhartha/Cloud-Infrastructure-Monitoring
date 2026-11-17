@@ -7,6 +7,7 @@ groups:
         for: 1m
         labels:
           severity: critical
+          category: availability
         annotations:
           summary: "Node exporter is down on {{ $labels.instance }}"
           description: "The node exporter target {{ $labels.instance }} has been unreachable for more than 1 minute."
@@ -18,6 +19,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          category: availability
         annotations:
           summary: "Node exporter has restarted frequently on {{ $labels.instance }}"
           description: "Node exporter on {{ $labels.instance }} has restarted {{ $value | printf \"%.0f\" }} times in the last hour."
@@ -29,6 +31,7 @@ groups:
         for: 2m
         labels:
           severity: critical
+          category: availability
         annotations:
           summary: "Prometheus target {{ $labels.instance }} is down"
           description: "The Prometheus target {{ $labels.instance }} (job: {{ $labels.job }}) has been unreachable for more than 2 minutes."

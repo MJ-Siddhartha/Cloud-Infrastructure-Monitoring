@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -41,5 +42,10 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Create all tables defined by the ORM models."""
+    import app.models  # noqa: F401  (register all models)
+
     async with async_engine.begin() as conn:
+        if conn.dialect.name == "postgresql":
+            # Several uvicorn workers start at once; serialise CREATE TABLE.
+            await conn.execute(text("SELECT pg_advisory_xact_lock(724000)"))
         await conn.run_sync(Base.metadata.create_all)

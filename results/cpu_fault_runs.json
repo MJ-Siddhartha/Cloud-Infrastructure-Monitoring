@@ -1,0 +1,64 @@
+{
+  "runs": [
+    {
+      "run": 1,
+      "t0": "2026-11-17T13:42:45.930293+00:00",
+      "duration_s": 120,
+      "HighCPUUsage_pending": 42.497,
+      "HighCPUUsage_firing": 72.537,
+      "CriticalCPUUsage_pending": 57.497,
+      "CriticalCPUUsage_firing": 87.698,
+      "peak_cpu_percent": {
+        "app-server-01:9100": 90.29,
+        "db-server-01:9100": 90.28,
+        "node-exporter:9100": 90.28
+      },
+      "warning_inhibited_in_alertmanager": true,
+      "incidents_created": [
+        "CriticalCPUUsage@app-server-01:9100",
+        "CriticalCPUUsage@db-server-01:9100",
+        "CriticalCPUUsage@node-exporter:9100",
+        "HighCPUUsage@node-exporter:9100"
+      ],
+      "incident_after_s": {
+        "CriticalCPUUsage@app-server-01:9100": 87.389,
+        "CriticalCPUUsage@db-server-01:9100": 87.388,
+        "CriticalCPUUsage@node-exporter:9100": 72.394,
+        "HighCPUUsage@node-exporter:9100": 72.388
+      },
+      "recovery_attempted": false
+    },
+    {
+      "run": 2,
+      "t0": "2026-11-17T13:46:04.941056+00:00",
+      "duration_s": 120,
+      "HighCPUUsage_pending": 38.486,
+      "HighCPUUsage_firing": 68.488,
+      "CriticalCPUUsage_pending": 53.486,
+      "CriticalCPUUsage_firing": 83.658,
+      "peak_cpu_percent": {
+        "app-server-01:9100": 90.28,
+        "db-server-01:9100": 90.28,
+        "node-exporter:9100": 90.29
+      },
+      "warning_inhibited_in_alertmanager": true,
+      "incidents_created": [
+        "CriticalCPUUsage@app-server-01:9100",
+        "CriticalCPUUsage@db-server-01:9100",
+        "CriticalCPUUsage@node-exporter:9100",
+        "HighCPUUsage@app-server-01:9100",
+        "HighCPUUsage@db-server-01:9100",
+        "HighCPUUsage@node-exporter:9100"
+      ],
+      "incident_after_s": {
+        "HighCPUUsage@db-server-01:9100": 83.534,
+        "HighCPUUsage@app-server-01:9100": 83.533,
+        "HighCPUUsage@node-exporter:9100": 83.531,
+        "CriticalCPUUsage@db-server-01:9100": 83.53,
+        "CriticalCPUUsage@node-exporter:9100": 83.378,
+        "CriticalCPUUsage@app-server-01:9100": 83.364
+      },
+      "recovery_attempted": false
+    }
+  ]
+}

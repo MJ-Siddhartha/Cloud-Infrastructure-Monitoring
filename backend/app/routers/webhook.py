@@ -85,6 +85,7 @@ async def receive_alertmanager_webhook(
                     continue
 
                 incident = await incident_service.create_incident(db, alert_data)
+                await db.commit()
                 logger.info("Created incident id=%s for alert=%s", incident.id, alert_name)
 
                 # Send notifications (fire-and-forget)
@@ -95,18 +96,23 @@ async def receive_alertmanager_webhook(
                 settings = get_settings()
                 if settings.RECOVERY_ENABLED:
                     try:
-                        from app.recovery.engine import RecoveryEngine, ALERT_PLAYBOOK_MAP
+                        from app.recovery.engine import ALERT_PLAYBOOK_MAP, get_recovery_engine
 
                         if alert_name in ALERT_PLAYBOOK_MAP:
-                            engine = RecoveryEngine(settings)
-                            if engine.should_recover(alert_name, instance, fingerprint):
-                                labels_dict = alert.labels.model_dump()
+                            engine = get_recovery_engine(settings)
+                            labels_dict = alert.labels.model_dump()
+                            if await engine.reserve_shared(
+                                db, alert_name, instance, fingerprint, labels_dict
+                            ):
                                 async def _run_bg_recovery(inc_id, a_name, inst, lbls):
                                     async with AsyncSessionLocal() as bg_db:
-                                        await engine.execute_recovery(
-                                            inc_id, a_name, inst, lbls, bg_db
-                                        )
-                                        await bg_db.commit()
+                                        try:
+                                            await engine.execute_recovery(
+                                                inc_id, a_name, inst, lbls, bg_db
+                                            )
+                                            await bg_db.commit()
+                                        except Exception as bg_exc:
+                                            logger.error("Background recovery error: %s", bg_exc)
 
                                 asyncio.create_task(
                                     _run_bg_recovery(
@@ -121,7 +127,7 @@ async def receive_alertmanager_webhook(
                                     db,
                                     incident.id,
                                     "skipped",
-                                    output="Recovery skipped: host/service not in allowlist or cooldown active",
+                                    output="Recovery skipped: host not in allowlist or cooldown active",
                                 )
                     except Exception as exc:
                         logger.error("Recovery trigger failed: %s", exc)

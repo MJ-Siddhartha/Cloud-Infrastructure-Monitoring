@@ -4,6 +4,10 @@ global:
 templates:
   - "/etc/alertmanager/templates/*.tmpl"
 
+# All notifications are delivered to the FastAPI backend, which stores the
+# incident and sends the Telegram / e-mail messages itself. Each alert matches
+# exactly ONE route (no `continue`), so it is delivered once per group cycle;
+# the backend is still idempotent in case of retries.
 route:
   receiver: "webhook-backend"
   group_by: ["alertname", "instance"]
@@ -12,27 +16,27 @@ route:
   repeat_interval: 4h
   routes:
     - receiver: "critical-alerts"
-      match:
-        severity: "critical"
+      matchers:
+        - severity = "critical"
       group_wait: 5s
       repeat_interval: 1h
-      continue: true
     - receiver: "warning-alerts"
-      match:
-        severity: "warning"
+      matchers:
+        - severity = "warning"
       group_wait: 15s
       repeat_interval: 4h
-      continue: true
-    - receiver: "webhook-backend"
-      match_re:
-        alertname: ".*"
 
+# Suppress a warning while a critical alert about the SAME problem is firing:
+# same instance, same category (cpu, memory, disk, ...), same service name and
+# mount point. Labels missing on both alerts count as equal.
+# Example: CriticalCPUUsage on app-server-01 inhibits HighCPUUsage on
+# app-server-01, but a failed nginx does not hide a CPU warning.
 inhibit_rules:
-  - source_match:
-      severity: "critical"
-    target_match:
-      severity: "warning"
-    equal: ["alertname", "instance"]
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ["instance", "category", "name", "mountpoint"]
 
 receivers:
   - name: "webhook-backend"

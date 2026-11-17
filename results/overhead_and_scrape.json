@@ -1,0 +1,96 @@
+{
+  "window": "1h",
+  "node_exporter_cpu_percent_avg": {
+    "node-exporter:9100": 0.1107,
+    "db-server-01:9100": 0.0676,
+    "app-server-01:9100": 0.0707
+  },
+  "node_exporter_cpu_percent_max": {
+    "node-exporter:9100": 0.2,
+    "db-server-01:9100": 0.1333,
+    "app-server-01:9100": 0.1111
+  },
+  "node_exporter_rss_mb_avg": {
+    "node-exporter:9100": 18.7537,
+    "db-server-01:9100": 19.5084,
+    "app-server-01:9100": 19.2347
+  },
+  "node_exporter_rss_mb_max": {
+    "node-exporter:9100": 20.2656,
+    "db-server-01:9100": 20.6641,
+    "app-server-01:9100": 20.1445
+  },
+  "scrape_success_percent": {
+    "localhost:9090": 100.0,
+    "node-exporter:9100": 100.0,
+    "db-server-01:9100": 100.0,
+    "backend:8000": 99.5833,
+    "app-server-01:9100": 100.0
+  },
+  "scrapes_counted": {
+    "localhost:9090": 240.0,
+    "node-exporter:9100": 240.0,
+    "db-server-01:9100": 240.0,
+    "backend:8000": 240.0,
+    "app-server-01:9100": 240.0
+  },
+  "scrape_duration_ms_avg": {
+    "localhost:9090": 4.6503,
+    "node-exporter:9100": 19.388,
+    "db-server-01:9100": 10.138,
+    "backend:8000": 4.3178,
+    "app-server-01:9100": 10.7362
+  },
+  "scrape_duration_ms_max": {
+    "localhost:9090": 8.7039,
+    "node-exporter:9100": 48.6217,
+    "db-server-01:9100": 29.275,
+    "backend:8000": 37.8633,
+    "app-server-01:9100": 20.9549
+  },
+  "rule_eval_duration_ms_avg": 0.702,
+  "tsdb_head_series": 4107,
+  "samples_appended_per_s": 267.75,
+  "docker_stats_snapshot": [
+    [
+      "backend",
+      "0.26%",
+      "74.7MiB / 7.611GiB"
+    ],
+    [
+      "grafana",
+      "0.14%",
+      "62.9MiB / 7.611GiB"
+    ],
+    [
+      "prometheus",
+      "0.22%",
+      "61.18MiB / 7.611GiB"
+    ],
+    [
+      "alertmanager",
+      "0.14%",
+      "16.63MiB / 7.611GiB"
+    ],
+    [
+      "postgres",
+      "0.03%",
+      "48MiB / 7.611GiB"
+    ],
+    [
+      "db-server-01",
+      "0.53%",
+      "26.31MiB / 7.611GiB"
+    ],
+    [
+      "node-exporter",
+      "0.00%",
+      "9.25MiB / 7.611GiB"
+    ],
+    [
+      "app-server-01",
+      "0.86%",
+      "34.38MiB / 7.611GiB"
+    ]
+  ]
+}
